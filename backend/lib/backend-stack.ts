@@ -26,6 +26,18 @@ export class BackendStack extends cdk.Stack {
       },     
     });
 
+    ///Defining a DynamoDB Table    
+    const todoTableEvent = new dynamodb.Table(this, 'todoAppEvent', {
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      partitionKey: {
+        name: 'id',
+        type: dynamodb.AttributeType.STRING,
+      },
+    });
+
+    ///Attaching Datasource to api
+    const todoTable = api.addDynamoDbDataSource('todoAppTable', todoTableEvent);
+
 
 
 
