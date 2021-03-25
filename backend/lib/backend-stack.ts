@@ -13,5 +13,21 @@ export class BackendStack extends cdk.Stack {
     super(scope, id, props);
 
     // The code that defines your stack goes here
+
+    /// APPSYNC API gives you a graphql api with api key
+
+    const api = new appsync.GraphqlApi(this, "Api", {
+      name: "project14B-EventbridgeAPI",
+      schema: appsync.Schema.fromAsset("utils/schema.gql"),
+      authorizationConfig: {
+        defaultAuthorization: {
+          authorizationType: appsync.AuthorizationType.API_KEY,          
+        },
+      },     
+    });
+
+
+
+
   }
 }

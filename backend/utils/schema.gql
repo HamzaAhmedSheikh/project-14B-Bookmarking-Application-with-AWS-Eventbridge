@@ -1,0 +1,24 @@
+type Event {
+  result: String
+}
+
+type bookmark {
+  id: String!
+  url: String!
+  description: String!
+}
+
+type Query {
+  allBookmarks: [bookmark!]
+}
+
+input bookmarkCreateInput {  
+  id: String!
+  url: String!
+  description: String!
+}
+
+type Mutation {
+  createBookmark(newBookmark: bookmarkCreateInput!): Event
+  deleteBookmark(id: String!): Event
+}
