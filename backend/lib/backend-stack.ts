@@ -8,6 +8,7 @@ import * as s3 from "@aws-cdk/aws-s3";
 import * as s3deploy from "@aws-cdk/aws-s3-deployment";
 import * as cloudfront from "@aws-cdk/aws-cloudfront";
 import * as origins from "@aws-cdk/aws-cloudfront-origins";
+import { requestTemplate, responseTemplate, EVENT_SOURCE } from '../utils/appsync-request-response';
 
 
 export class BackendStack extends cdk.Stack {
@@ -37,7 +38,7 @@ export class BackendStack extends cdk.Stack {
     });
 
     ///Attaching Datasource to api
-    const todoTable = api.addDynamoDbDataSource('todoAppTable', todoTableEvent);
+    const bookmarkTable = api.addDynamoDbDataSource('todoAppTable', todoTableEvent);
 
     // Create Http Data source that will put our event to the eventbus
     const httpEventTriggerDS = api.addHttpDataSource(
@@ -54,6 +55,31 @@ export class BackendStack extends cdk.Stack {
     );
     
     events.EventBus.grantAllPutEvents(httpEventTriggerDS);
+
+    // Resolver
+    bookmarkTable.createResolver({
+      typeName: "Query",
+      fieldName: "allBookmarks",
+      requestMappingTemplate: appsync.MappingTemplate.dynamoDbScanTable(),
+      responseMappingTemplate: appsync.MappingTemplate.dynamoDbResultList(),
+    });
+
+    const mutations = ["createBookmark","deleteBookmark"]
+   
+    mutations.forEach((mut) => {
+      let details = `\\\"id\\\": \\\"$ctx.args.id\\\"`;
+
+      if (mut === 'createBookmark') {
+        details = `\\\"url\\\":\\\"$ctx.args.newBookmark.url\\\", \\\"description\\\":\\\"$ctx.args.newBookmark.description\\\", \\\"id\\\":\\\"$ctx.args.newBookmark.id\\\"`
+      } 
+      
+    httpEventTriggerDS.createResolver({
+      typeName: "Mutation",
+      fieldName: mut,
+      requestMappingTemplate: appsync.MappingTemplate.fromString(requestTemplate(details, mut)),
+      responseMappingTemplate: appsync.MappingTemplate.fromString(responseTemplate()),
+    });
+  });
 
 
 
