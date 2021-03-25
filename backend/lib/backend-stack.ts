@@ -25,7 +25,7 @@ export class BackendStack extends cdk.Stack {
         defaultAuthorization: {
           authorizationType: appsync.AuthorizationType.API_KEY,     ///Defining Authorization Type          
         },
-      },      
+      },
     });
 
     ///Defining a DynamoDB Table    
@@ -53,7 +53,7 @@ export class BackendStack extends cdk.Stack {
         },
       }
     );
-    
+
     events.EventBus.grantAllPutEvents(httpEventTriggerDS);
 
     // Resolver
@@ -64,36 +64,55 @@ export class BackendStack extends cdk.Stack {
       responseMappingTemplate: appsync.MappingTemplate.dynamoDbResultList(),
     });
 
-    const mutations = ["createBookmark","deleteBookmark"]
-   
+    const mutations = ["createBookmark", "deleteBookmark"]
+
     mutations.forEach((mut) => {
       let details = `\\\"id\\\": \\\"$ctx.args.id\\\"`;
 
       if (mut === 'createBookmark') {
         details = `\\\"url\\\":\\\"$ctx.args.newBookmark.url\\\", \\\"description\\\":\\\"$ctx.args.newBookmark.description\\\", \\\"id\\\":\\\"$ctx.args.newBookmark.id\\\"`
-      } 
-      
-    httpEventTriggerDS.createResolver({
-      typeName: "Mutation",
-      fieldName: mut,
-      requestMappingTemplate: appsync.MappingTemplate.fromString(requestTemplate(details, mut)),
-      responseMappingTemplate: appsync.MappingTemplate.fromString(responseTemplate()),
+      }
+
+      httpEventTriggerDS.createResolver({
+        typeName: "Mutation",
+        fieldName: mut,
+        requestMappingTemplate: appsync.MappingTemplate.fromString(requestTemplate(details, mut)),
+        responseMappingTemplate: appsync.MappingTemplate.fromString(responseTemplate()),
+      });
     });
-  });
 
-   // creating Lambda function
-   const dynamoHandlerLambda = new lambda.Function(this, 'Dynamo_Handler', {
-    code: lambda.Code.fromAsset('lambda'),
-    runtime: lambda.Runtime.NODEJS_12_X,
-    handler: 'dynamoHandler.handler',
-    environment: {
-      DYNAMO_TABLE_NAME:  todoTableEvent .tableName,
-    },    
-  });
+    // creating Lambda function
+    const dynamoHandlerLambda = new lambda.Function(this, 'Dynamo_Handler', {
+      code: lambda.Code.fromAsset('lambda'),
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'dynamoHandler.handler',
+      environment: {
+        DYNAMO_TABLE_NAME: todoTableEvent.tableName,
+      },
+    });
 
+    // Giving Table access to dynamoHandlerLambda
+    todoTableEvent.grantReadWriteData(dynamoHandlerLambda);
 
+    new events.Rule(this, "TodoTableRule", {
+      targets: [new eventsTargets.LambdaFunction(dynamoHandlerLambda)],
+      eventPattern: {
+        source: [EVENT_SOURCE],
+        detailType: [...mutations],
+      },
+    });
 
+    new cdk.CfnOutput(this, 'Graphql_Endpoint', {
+      value: api.graphqlUrl
+    });
+    
+    new cdk.CfnOutput(this, "GraphQLAPIKEY", {
+      value: api.apiKey || "",
+    });
 
+    new cdk.CfnOutput(this, "RegionName", {
+      value: this.region,
+    });  
 
   }
 }
