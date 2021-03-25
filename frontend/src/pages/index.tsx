@@ -125,6 +125,18 @@ function BookmarkApp() {
     setLoading(false);
   };
 
+  const handleDelete = (id: any) => {
+    let deleteBookmark = deleteTask({
+      variables: {
+        id: id,
+      },
+
+      refetchQueries: [{ query: BookMarksQuery }],
+    });
+
+    console.log("deleteBookmark ===> ", deleteBookmark);
+  };
+
   return (
     <div>
       <AppBar position="static" color="primary">
@@ -193,7 +205,7 @@ function BookmarkApp() {
                     <h3> {d.description} </h3>
                     <Delete
                       className="deletebtn"
-                      // onClick={() => handleDelete(d.id)}
+                      onClick={() => handleDelete(d.id)}
                     />
                   </div>
 
