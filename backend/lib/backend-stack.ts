@@ -81,6 +81,17 @@ export class BackendStack extends cdk.Stack {
     });
   });
 
+   // creating Lambda function
+   const dynamoHandlerLambda = new lambda.Function(this, 'Dynamo_Handler', {
+    code: lambda.Code.fromAsset('lambda'),
+    runtime: lambda.Runtime.NODEJS_12_X,
+    handler: 'dynamoHandler.handler',
+    environment: {
+      DYNAMO_TABLE_NAME:  todoTableEvent .tableName,
+    },    
+  });
+
+
 
 
 
